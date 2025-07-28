@@ -1,31 +1,28 @@
-import warnings
 from typing import Callable, Iterable
-
 import numpy as np
 from scipy.optimize import root_scalar
 
-
 def multi_root(f: Callable, bracket: Iterable[float], args: Iterable = (), n: int = 30) -> np.ndarray:
-    """ Find all roots of f in `bracket`, given that resolution `n` covers the sign change.
-    Fine-grained root finding is performed with `scipy.optimize.root_scalar`.
+    """
+    Identify all real roots of the function `f` within the interval `bracket`, assuming the sampling resolution `n` is sufficient to detect all sign changes.
+
+    Root detection is refined using `scipy.optimize.root_scalar`.
 
     Parameters
     ----------
-    f: Callable
-        Function to be evaluated
-    bracket: Sequence of two floats
-        Specifies interval within which roots are searched.
-    args: Iterable, optional
-        Iterable passed to `f` for evaluation
-    n: int
-        Number of points sampled equidistantly from bracket to evaluate `f`.
-        Resolution has to be high enough to cover sign changes of all roots but not finer than that.
-        Actual roots are found using `scipy.optimize.root_scalar`.
+    f : Callable
+        The target function for which roots are to be found.
+    bracket : Sequence[float]
+        A two-element sequence specifying the interval within which to search for roots.
+    args : Iterable, optional
+        Additional arguments to pass to the function `f` during evaluation.
+    n : int
+        Number of evenly spaced sample points used to probe the interval. The resolution must be fine enough to capture every sign change corresponding to a root, but should not be excessively high.
 
     Returns
     -------
-    roots: np.ndarray
-        Array containing all unique roots that were found in `bracket`.
+    roots : np.ndarray
+        A NumPy array containing all distinct roots located within the specified interval.
     """
     # Evaluate function in given bracket
     x = np.linspace(*bracket, n)
@@ -49,20 +46,13 @@ def multi_root(f: Callable, bracket: Iterable[float], args: Iterable = (), n: in
         for r in root_finders
     ])
 
-    if np.any(np.isnan(roots)):
-        warnings.warn("Not all root finders converged for estimated brackets! Maybe increase resolution `n`.")
-        roots = roots[~np.isnan(roots)]
+    # Drop non-converged results
+    roots = roots[~np.isnan(roots)]
 
+    # Drop duplicates
     roots_unique = np.unique(roots)
-    if len(roots_unique) != len(roots):
-        warnings.warn("One root was found multiple times. "
-                      "Try to increase or decrease resolution `n` to see if this warning disappears.")
 
     return roots_unique
 
 
-if __name__ == '__main__':
-    def poly1(x):
-        return (x+4)*(x+2)*(x-1)*(x-5)
 
-    roots = multi_root(poly1, [-5, 6])
